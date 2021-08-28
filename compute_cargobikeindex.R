@@ -214,7 +214,7 @@ while (input_intervall_min < length(way_ids)) {
     )
   # split and duplicate right and left cycleway -------------------------------------------
 
-  # get all streets with at a cycleway on at least one side where both directions are allowed to ride on
+  # get all streets with a cycleway on at least one side where both directions are allowed to ride on
   streets$two_directions_w_cycleways <- (!streets$oneway %in% "yes" & !streets$oneway_bicycle %in% "no") &
     ((streets$cycleway_right %in% cycleway_options) |
       (streets$cycleway_left %in% cycleway_options) |
