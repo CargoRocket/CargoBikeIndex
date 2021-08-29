@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- compute index --
 -------------------------------------------------------------------------------
--- select * from ways limit 10;
+select * from ways limit 10;
 
 -- create boolean column "both_directions"
 
@@ -11,13 +11,13 @@ ADD both_directions boolean;
 UPDATE ways
 SET both_directions = true 
 WHERE (ways.tags -> 'oneway' <> 'yes' OR NOT exist(ways.tags, 'oneway')
-			and ways.tags -> 'oneway=>bicycle' <> 'no' OR NOT exist(ways.tags, 'oneway=>bicycle') )
-		and (ways.tags -> 'cycleway=>right' in ('track', 'lane', 'opposite_lane', 'share_busway') or
-			 ways.tags -> 'cycleway=>left' in ('track', 'lane', 'opposite_lane', 'share_busway') or
+			and ways.tags -> 'oneway:bicycle' <> 'no' OR NOT exist(ways.tags, 'oneway:bicycle') )
+		and (ways.tags -> 'cycleway:right' in ('track', 'lane', 'opposite_lane', 'share_busway') or
+			 ways.tags -> 'cycleway:left' in ('track', 'lane', 'opposite_lane', 'share_busway') or
 			 ways.tags -> 'cycleway' in ('track', 'lane', 'opposite_lane', 'share_busway') or
-			 ways.tags -> 'cycleway=>both' in ('track', 'lane', 'opposite_lane', 'share_busway') or 
-			exist (ways.tags, 'bicycle=>lanes=>forward') or 
-			exist (ways.tags, 'bicycle=>lanes=>backward'));
+			 ways.tags -> 'cycleway:both' in ('track', 'lane', 'opposite_lane', 'share_busway') or 
+			exist (ways.tags, 'bicycle:lanes:forward') or 
+			exist (ways.tags, 'bicycle:lanes:backward'));
 		
 -- select * from ways where both_directions isnull;
 
@@ -35,9 +35,9 @@ add bicycle_lane_forward int,
 add bicycle_lane_backward int;
 
 update ways
-set bicycle_lane_id = array_position(regexp_split_to_array(ways.tags -> 'bicycle=>lanes', '\|'), 'designated'),
-	bicycle_lane_forward = array_position(regexp_split_to_array(ways.tags -> 'bicycle=>lanes=>forward', '\|'), 'designated'),
-	bicycle_lane_backward = array_position(regexp_split_to_array(ways.tags -> 'bicycle=>lanes=>backward', '\|'), 'designated');
+set bicycle_lane_id = array_position(regexp_split_to_array(ways.tags -> 'bicycle:lanes', '\|'), 'designated'),
+	bicycle_lane_forward = array_position(regexp_split_to_array(ways.tags -> 'bicycle:lanes:forward', '\|'), 'designated'),
+	bicycle_lane_backward = array_position(regexp_split_to_array(ways.tags -> 'bicycle:lanes:backward', '\|'), 'designated');
 
 
 -- create column bicycle lane width (forward, backward both) from width lanes
@@ -48,18 +48,18 @@ add cycleway_width_backward_extracted varchar,
 add cycleway_width_extracted varchar;
 
 update ways
-set cycleway_width_extracted = (regexp_split_to_array(ways.tags -> 'width=>lanes', '\|'))[bicycle_lane_id],
-cycleway_width_forward_extracted = (regexp_split_to_array(ways.tags -> 'width=>lanes=>forward', '\|'))[bicycle_lane_forward],
-cycleway_width_backward_extracted = (regexp_split_to_array(ways.tags -> 'width=>lanes=>backward', '\|'))[bicycle_lane_backward];
+set cycleway_width_extracted = (regexp_split_to_array(ways.tags -> 'width:lanes', '\|'))[bicycle_lane_id],
+cycleway_width_forward_extracted = (regexp_split_to_array(ways.tags -> 'width:lanes:forward', '\|'))[bicycle_lane_forward],
+cycleway_width_backward_extracted = (regexp_split_to_array(ways.tags -> 'width:lanes:backward', '\|'))[bicycle_lane_backward];
 
 
 -- check if width extraction worked 
---select ways.tags -> 'bicycle=>lanes=>forward', 
---ways.tags -> 'width=>lanes=>forward',
+--select ways.tags -> 'bicycle:lanes:forward', 
+--ways.tags -> 'width:lanes:forward',
 --bicycle_lane_forward,
 --cycleway_width_forward_extracted
 --from ways
---where exist(ways.tags, 'bicycle=>lanes=>forward');
+--where exist(ways.tags, 'bicycle:lanes:forward');
 
 --------
 -- combine cycleway and width tagging to one
@@ -73,13 +73,13 @@ add cycleway_left_width varchar,
 add cycleway_oneway_combined varchar;
 
 UPDATE ways
-set cycleway_combined = COALESCE(ways.tags -> 'cycleway=>right', ways.tags -> 'cycleway=>left', ways.tags -> 'cycleway', ways.tags -> 'cycleway=>both'),
-    cycleway_right = COALESCE(ways.tags -> 'cycleway=>right', ways.tags -> 'cycleway', ways.tags -> 'cycleway=>both'),
-    cycleway_left = COALESCE(ways.tags -> 'cycleway=>left', ways.tags -> 'cycleway', ways.tags -> 'cycleway=>both'),
-    cycleway_width_combined = COALESCE(ways.tags -> 'cycleway=>right=>width', ways.tags -> 'cycleway=>left=>width', ways.tags -> 'cycleway=>width', ways.tags -> 'cycleway=>both=>width'),
-    cycleway_right_width = COALESCE(ways.tags -> 'cycleway=>right=>width', cycleway_width_forward_extracted),
-    cycleway_left_width = COALESCE(ways.tags -> 'cycleway=>left=>width', cycleway_width_backward_extracted),
-    cycleway_oneway_combined = COALESCE(ways.tags -> 'cycleway=>right=>oneway', ways.tags -> 'cycleway=>left=>oneway', ways.tags -> 'cycleway=>oneway', ways.tags -> 'cycleway=>both=>oneway');
+set cycleway_combined = COALESCE(ways.tags -> 'cycleway:right', ways.tags -> 'cycleway:left', ways.tags -> 'cycleway', ways.tags -> 'cycleway:both'),
+    cycleway_right = COALESCE(ways.tags -> 'cycleway:right', ways.tags -> 'cycleway', ways.tags -> 'cycleway:both'),
+    cycleway_left = COALESCE(ways.tags -> 'cycleway:left', ways.tags -> 'cycleway', ways.tags -> 'cycleway:both'),
+    cycleway_width_combined = COALESCE(ways.tags -> 'cycleway:right:width', ways.tags -> 'cycleway:left:width', ways.tags -> 'cycleway:width', ways.tags -> 'cycleway:both:width'),
+    cycleway_right_width = COALESCE(ways.tags -> 'cycleway:right:width', cycleway_width_forward_extracted),
+    cycleway_left_width = COALESCE(ways.tags -> 'cycleway:left:width', cycleway_width_backward_extracted),
+    cycleway_oneway_combined = COALESCE(ways.tags -> 'cycleway:right:oneway', ways.tags -> 'cycleway:left:oneway', ways.tags -> 'cycleway:oneway', ways.tags -> 'cycleway:both:oneway');
 
 -- also include streets, that are highway=cycleway instead of using the tag "cycleway"
 update ways
@@ -121,12 +121,12 @@ add smoothness_left varchar,
 add smoothness_combined varchar;
 
 UPDATE ways
-set cycleway_surface_right = COALESCE(ways.tags -> 'cycleway=>right=>surface', ways.tags -> 'cycleway=>surface', ways.tags -> 'cycleway=>surface=>both'),
-    cycleway_surface_left = COALESCE(ways.tags -> 'cycleway=>left=>surface', ways.tags -> 'cycleway=>surface', ways.tags -> 'cycleway=>surface=>both'),
-    cycleway_surface_combined = COALESCE(ways.tags -> 'cycleway=>right=>surface', ways.tags -> 'cycleway=>left=>surface', ways.tags -> 'cycleway=>surface', ways.tags -> 'cycleway=>surface=>both'),
-    cycleway_smoothness_right = COALESCE(ways.tags -> 'cycleway=>right=>smoothness', ways.tags -> 'cycleway=>smoothness', ways.tags -> 'cycleway=>smoothness=>both'),
-    cycleway_smoothness_left = COALESCE(ways.tags -> 'cycleway=>left=>smoothness', ways.tags -> 'cycleway=>smoothness', ways.tags -> 'cycleway=>smoothness=>both'),
-    cycleway_smoothness_combined = COALESCE(ways.tags -> 'cycleway=>right=>smoothness', ways.tags -> 'cycleway=>left=>smoothness', ways.tags -> 'cycleway=>smoothness', ways.tags -> 'cycleway=>smoothness=>both');
+set cycleway_surface_right = COALESCE(ways.tags -> 'cycleway:right:surface', ways.tags -> 'cycleway:surface', ways.tags -> 'cycleway:surface:both'),
+    cycleway_surface_left = COALESCE(ways.tags -> 'cycleway:left:surface', ways.tags -> 'cycleway:surface', ways.tags -> 'cycleway:surface:both'),
+    cycleway_surface_combined = COALESCE(ways.tags -> 'cycleway:right:surface', ways.tags -> 'cycleway:left:surface', ways.tags -> 'cycleway:surface', ways.tags -> 'cycleway:surface:both'),
+    cycleway_smoothness_right = COALESCE(ways.tags -> 'cycleway:right:smoothness', ways.tags -> 'cycleway:smoothness', ways.tags -> 'cycleway:smoothness:both'),
+    cycleway_smoothness_left = COALESCE(ways.tags -> 'cycleway:left:smoothness', ways.tags -> 'cycleway:smoothness', ways.tags -> 'cycleway:smoothness:both'),
+    cycleway_smoothness_combined = COALESCE(ways.tags -> 'cycleway:right:smoothness', ways.tags -> 'cycleway:left:smoothness', ways.tags -> 'cycleway:smoothness', ways.tags -> 'cycleway:smoothness:both');
   
 
 update ways 
@@ -542,7 +542,7 @@ ways.tags -> 'cbi_backward'as old_CBI_backward,
 cbi_cycleways,
 cbi_surface,
 tags
-from ways where ways.tags -> 'cycleway=>right' = 'lane';
+from ways where ways.tags -> 'cycleway:right' = 'lane';
 
 -- select(case 
 --	when cbi_surface notnull and cbi_cycleways notnull then round(cast(sqrt(cbi_surface*cbi_cycleways) as numeric), 1)
