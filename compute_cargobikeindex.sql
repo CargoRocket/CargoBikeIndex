@@ -520,29 +520,46 @@ set cbi_backward =
 update ways
 set cbi = (case when both_directions then null else cbi end),
 cbi_forward = (case when both_directions then cbi_forward else null end),
-cbi_backward = (case when both_directions then cbi_backward else null end),
-cbi_street_quality = (case when both_directions then null else cbi_street_quality end),
-cbi_street_quality_forward = (case when both_directions then cbi_street_quality_forward else null end),
-cbi_street_quality_backward = (case when both_directions then cbi_street_quality_backward else null end);
+cbi_backward = (case when both_directions then cbi_backward else null end);
 
--- TODO: remove index for road not allowed for bikes
--- TODO: 0 for add highway=proposed, motorroad = yes, motorway motorwar_link, trunk, trunk_link, bus_guideway,
--- escape, bridleway, corridor, busway (if bike not allowed)
--- add: 0 for access: "agricultural", "customers", "delivery", "private",
---        "permit", "bus", "public_transport", "emergency", "forestry" if not alled for bikes: bicycle %in% c("yes", "designated", "permissive", "dismount"
+-- remove index for road not allowed for bikes
+update ways 
+set cbi = null,
+cbi_forward = null,
+cbi_backward = null
+where ways.tags -> 'highway' = 'proposed'
+  or ((ways.tags -> 'motorroad' = 'yes'
+    or ways.tags -> 'highway' in ('motorway', 'motorwar_link', 'trunk', 'trunk_link', 'bus_guideway','escape', 'bridleway', 'corridor', 'busway')
+    or ways.tags -> 'access' in ('agricultural', 'customers', 'delivery', 'private', 'permit', 'bus', 'public_transport', 'emergency', 'forestry')) 
+   and (not exist(ways.tags, 'bicycle') or ways.tags -> 'bicycle' not in ('yes', 'designated', 'permissive', 'dismount')));
+
+
+--cbi_street_quality = (case when both_directions then null else cbi_street_quality end),
+--cbi_street_quality_forward = (case when both_directions then cbi_street_quality_forward else null end),
+--cbi_street_quality_backward = (case when both_directions then cbi_street_quality_backward else null end);
+
+update ways
+SET tags = tags || hstore('cbi', cbi::text)
+where not both_directions;
+
+update ways 
+set tags = tags || hstore('cbi_forward', cbi_forward::text),
+tags = tags || hstore('cbi_backward', cbi_backward::text)
+where both_directions;
 
 ----- check results -----
-select cbi, 
-cbi_forward,
-cbi_backward,
-cbi_street_quality_forward,
-ways.tags -> 'cbi'as old_CBI,
-ways.tags -> 'cbi_forward'as old_CBI_forward,
-ways.tags -> 'cbi_backward'as old_CBI_backward,
-cbi_cycleways,
-cbi_surface,
-tags
-from ways where ways.tags -> 'cycleway:right' = 'lane';
+-- select * from ways limit 10;
+
+-- select cbi, 
+-- cbi_forward,
+-- cbi_backward,
+-- cbi_street_quality_forward,
+-- ways.tags -> 'cbi' as CBI,
+-- ways.tags -> 'cbi_forward'as CBI_forward,
+-- ways.tags -> 'cbi_backward'as CBI_backward
+-- where exist(ways.tags, 'cbi');
+
+-- from ways where ways.tags -> 'cycleway:right' = 'lane';
 
 -- select(case 
 --	when cbi_surface notnull and cbi_cycleways notnull then round(cast(sqrt(cbi_surface*cbi_cycleways) as numeric), 1)
@@ -589,15 +606,13 @@ drop cbi_cycleways_forward,
 drop cbi_cycleways_backward,
 drop cbi_surface,
 drop cbi_surface_forward,
-drop cbi_surface_backward;
-
---alter table ways
---drop cbi,
---drop cbi_forward,
---drop cbi_backward,
---drop cbi_street_quality,
---drop cbi_street_quality_forward,
---drop cbi_street_quality_backward,
---drop cbi_barrier;
+drop cbi_surface_backward,
+drop cbi,
+drop cbi_forward,
+drop cbi_backward,
+drop cbi_street_quality,
+drop cbi_street_quality_forward,
+drop cbi_street_quality_backward,
+drop cbi_barrier;
 
 
