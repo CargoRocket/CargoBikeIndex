@@ -168,3 +168,13 @@ Unlike road type and surface barriers do not impede passing in the best case, bu
 | bump                |                                              |   0,6 |
 | mini_bumps          |                                              |   0,6 |
 | rumble_strip        |                                              |   0,6 |
+
+
+## Load OSM data into PostgreSQL
+
+use [_osmosis_](https://wiki.openstreetmap.org/wiki/Osmosis) to load data into a PostgreSQL database according to [this Setup](https://wiki.openstreetmap.org/wiki/Osmosis/PostGIS_Setup).
+
+After respective changes in the DB, create a PBF file with this command: 
+```osmosis --read-pgsql database=DATABASE_NAME --dataset-dump  --write-pbf file=OUTPUT_FILE_NAME.pbf```
+
+
